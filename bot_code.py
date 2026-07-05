@@ -10,9 +10,7 @@ from aiogram.types import (
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
 import uuid
-
-API_TOKEN = ""
-DB_PATH = "orders.db"
+from config import API_TOKEN, DB_PATH
 
 STATUSES = [
     ("accepted", "Заказ в работе"),
