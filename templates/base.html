@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Warehouse Bot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Warehouse Bot">
+            <div class="brand-title">Warehouse Bot</div>
+        </div>
+        <nav>
+            <a class="{{ 'active' if active_tab == 'orders' else '' }}" href="{{ url_for('orders') }}">Существующие заказы</a>
+            <a class="{{ 'active' if active_tab == 'add' else '' }}" href="{{ url_for('add_order') }}">Добавить заказ</a>
+            <a class="{{ 'active' if active_tab == 'logs' else '' }}" href="{{ url_for('logs') }}">Логи телеграм бота</a>
+            <a class="{{ 'active' if active_tab == 'about' else '' }}" href="{{ url_for('about') }}">О сайте</a>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

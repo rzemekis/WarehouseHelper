@@ -1,6 +1,7 @@
 import asyncio
 import aiosqlite
-from aiogram import Bot, Dispatcher, types
+import logging
+from aiogram import Bot, Dispatcher
 from aiogram.types import (
     Message,
     CallbackQuery,
@@ -26,7 +27,7 @@ STATUS_EMOJIS = {
     "shipped": "✅",
 }
 
-bot = Bot(token=API_TOKEN)
+bot = None
 dp = Dispatcher()
 
 async def init_db():
@@ -107,6 +108,7 @@ def build_inline_keyboard(order):
 
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
+    logging.info("Telegram: /start from chat %s", message.chat.id)
     await message.answer(
         "Привет! Я бот для отслеживания заказов.\n"
         "Используй команду:\n"
@@ -145,6 +147,7 @@ async def cmd_new_order(message: Message):
             cursor = await db.execute("SELECT order_id FROM orders WHERE order_id = ?", (order_id,))
             existing = await cursor.fetchone()
             if existing:
+                logging.info("Telegram: duplicate order %s", order_id)
                 await message.answer("Такой заказ уже есть")
                 return
 
@@ -153,6 +156,8 @@ async def cmd_new_order(message: Message):
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (order_id, description, client_type, "", 0, 0, 0))
             await db.commit()
+
+        logging.info("Telegram: created order %s", order_id)
 
         order = {
             "order_id": order_id,
@@ -172,7 +177,7 @@ async def cmd_new_order(message: Message):
             await db.commit()
 
     except Exception as e:
-        print("Ошибка в /new_order:", e)
+        logging.exception("Ошибка в /new_order: %s", e)
         await message.answer("Произошла ошибка при создании заказа")
 
 
@@ -196,6 +201,8 @@ async def cmd_comment(message: Message):
         await db.execute("UPDATE orders SET comment = ? WHERE order_id = ?", (new_comment, order_id))
         await db.commit()
 
+    logging.info("Telegram: updated comment for order %s", order_id)
+
     message_id = row[5]
     chat_id = row[6]
 
@@ -216,7 +223,7 @@ async def cmd_comment(message: Message):
     try:
         await bot.edit_message_text(text, chat_id=chat_id, message_id=message_id, reply_markup=keyboard)
     except Exception as e:
-        print("Ошибка при обновлении сообщения с заказом:", e)
+        logging.exception("Ошибка при обновлении сообщения с заказом: %s", e)
 
     await message.answer(f"Комментарий для заказа #{order_id} успешно обновлён.")
 
@@ -241,6 +248,7 @@ async def cmd_list_orders(message: Message):
     rows_buttons = [buttons[i:i + 3] for i in range(0, len(buttons), 3)]
     keyboard = InlineKeyboardMarkup(inline_keyboard=rows_buttons)
     await message.answer("Выберите заказ:", reply_markup=keyboard)
+    logging.info("Telegram: listed %s orders", len(rows))
 
 
 @dp.callback_query(lambda c: c.data.startswith("show_order:"))
@@ -312,6 +320,8 @@ async def handle_callback(callback: CallbackQuery):
             await db.execute("UPDATE orders SET status = ? WHERE order_id = ?", (new_status, order_id))
             await db.commit()
 
+        logging.info("Telegram: order %s status changed to %s", order_id, new_status)
+
         order = {
             "order_id": row[0],
             "description": row[1],
@@ -329,7 +339,7 @@ async def handle_callback(callback: CallbackQuery):
         try:
             await bot.edit_message_text(text, chat_id=row[6], message_id=row[5], reply_markup=keyboard)
         except Exception as e:
-            print("Edit message error:", e)
+            logging.exception("Edit message error: %s", e)
 
         await callback.answer("Статус обновлён")
 
@@ -353,6 +363,8 @@ async def handle_callback(callback: CallbackQuery):
             await db.execute("UPDATE orders SET status = ? WHERE order_id = ?", (new_status, order_id))
             await db.commit()
 
+        logging.info("Telegram: order %s status rolled back to %s", order_id, new_status)
+
         order = {
             "order_id": row[0],
             "description": row[1],
@@ -368,7 +380,7 @@ async def handle_callback(callback: CallbackQuery):
         try:
             await bot.edit_message_text(text, chat_id=row[6], message_id=row[5], reply_markup=keyboard)
         except Exception as e:
-            print("Edit message error (undo):", e)
+            logging.exception("Edit message error (undo): %s", e)
         await callback.answer("Статус откатили")
 
     elif data.startswith("paid_toggle:"):
@@ -382,6 +394,8 @@ async def handle_callback(callback: CallbackQuery):
             new_paid = 0 if row[4] else 1
             await db.execute("UPDATE orders SET is_paid = ? WHERE order_id = ?", (new_paid, order_id))
             await db.commit()
+
+        logging.info("Telegram: order %s payment changed to %s", order_id, bool(new_paid))
 
         order = {
             "order_id": row[0],
@@ -398,7 +412,7 @@ async def handle_callback(callback: CallbackQuery):
         try:
             await bot.edit_message_text(text, chat_id=row[6], message_id=row[5], reply_markup=keyboard)
         except Exception as e:
-            print("Edit message error (paid):", e)
+            logging.exception("Edit message error (paid): %s", e)
         await callback.answer("Оплата изменена")
 
     elif data.startswith("delete_order:"):
@@ -411,28 +425,25 @@ async def handle_callback(callback: CallbackQuery):
                 return
             await db.execute("DELETE FROM orders WHERE order_id = ?", (order_id,))
             await db.commit()
+        logging.info("Telegram: deleted order %s", order_id)
         try:
             await bot.delete_message(chat_id=row[1], message_id=row[0])
         except Exception as e:
-            print("Delete message error:", e)
+            logging.exception("Delete message error: %s", e)
         await callback.answer("Заказ удалён")
 
 
-async def main():
+async def run_bot():
+    global bot
+    if not API_TOKEN:
+        raise RuntimeError("API_TOKEN is empty. Add your Telegram bot token to config.py.")
+
+    bot = Bot(token=API_TOKEN)
     await init_db()
+    logging.info("База данных инициализирована, бот запущен.")
     await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
-
-
-async def main():
-    await init_db()
-    print("База данных инициализирована, бот запущен.")
-    await dp.start_polling(bot)
-
-
-if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    logging.basicConfig(level=logging.INFO)
+    asyncio.run(run_bot())

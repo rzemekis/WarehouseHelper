@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="toolbar">
+        <h1>Существующие заказы</h1>
+        <a class="button" href="{{ url_for('add_order') }}">Добавить заказ</a>
+    </div>
+
+    {% if orders %}
+        <section class="grid">
+            {% for order in orders %}
+                <article class="card">
+                    <div class="card-head">
+                        <div>
+                            <div class="order-id">#{{ order.order_id }}</div>
+                            <div class="muted">{{ order.client_type or 'Клиент не указан' }}</div>
+                        </div>
+                        <div class="{{ 'paid' if order.is_paid else 'unpaid' }}">
+                            {{ 'Оплачен' if order.is_paid else 'Не оплачен' }}
+                        </div>
+                    </div>
+
+                    <p>{{ order.description }}</p>
+
+                    <form method="post" action="{{ url_for('update_order', order_id=order.order_id) }}">
+                        <label>Статус</label>
+                        <select name="status">
+                            <option value="" {{ 'selected' if not order.status else '' }}>Статус не назначен</option>
+                            {% for key, label in statuses %}
+                                <option value="{{ key }}" {{ 'selected' if order.status == key else '' }}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <label>Комментарий</label>
+                        <textarea name="comment">{{ order.comment or '' }}</textarea>
+
+                        <label class="inline">
+                            <input type="checkbox" name="is_paid" {{ 'checked' if order.is_paid else '' }}>
+                            Оплачен
+                        </label>
+
+                        <div class="actions">
+                            <button type="submit">Сохранить</button>
+                        </div>
+                    </form>
+
+                    <form method="post" action="{{ url_for('delete_order', order_id=order.order_id) }}">
+                        <div class="actions">
+                            <button class="danger" type="submit">Удалить</button>
+                        </div>
+                    </form>
+                </article>
+            {% endfor %}
+        </section>
+    {% else %}
+        <div class="empty">Заказов пока нет. Добавьте первый заказ через вкладку выше.</div>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Добавить заказ</h1>
+
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <section class="form-panel">
+        <form method="post">
+            <label>Номер заказа</label>
+            <input name="order_id" placeholder="123456" required>
+
+            <label>Описание + клиент</label>
+            <textarea name="description" placeholder="Очки серые 5шт ИП Троян" required></textarea>
+
+            <label>Комментарий</label>
+            <textarea name="comment" placeholder="Дополнительная информация"></textarea>
+
+            <label class="inline">
+                <input type="checkbox" name="is_paid">
+                Оплачен
+            </label>
+
+            <button type="submit">Создать заказ</button>
+        </form>
+    </section>
+{% endblock %}
