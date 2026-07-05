@@ -11,7 +11,7 @@ from aiogram.enums import ParseMode
 from aiogram.filters import Command
 import uuid
 
-API_TOKEN = "8162450268:AAGAbfDgZuhGz_uF_Zz01nbIlnSHBWqOvN8"
+API_TOKEN = ""
 DB_PATH = "orders.db"
 
 STATUSES = [
@@ -110,8 +110,8 @@ def build_inline_keyboard(order):
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
     await message.answer(
-        "👋 Привет! Я бот для отслеживания заказов.\n"
-        "✅ Используй команду:\n"
+        "Привет! Я бот для отслеживания заказов.\n"
+        "Используй команду:\n"
         "`/new_order <номер> <описание> ИП/ООО <Фамилия>`\n"
         "Пример:\n"
         "`/new_order 123456 Очки серые 5шт ИП Троян`",
