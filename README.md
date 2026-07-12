@@ -1,4 +1,7 @@
 # Warehouse Helper made on Python + HTML(runs both website and bot)
+<img width="2556" height="1326" alt="image" src="https://github.com/user-attachments/assets/a97e9863-9c50-43e1-bac6-fba862134065" />
+<img width="558" height="368" alt="image" src="https://github.com/user-attachments/assets/dc5c3384-3d50-4362-bbbf-6b53d36cdaa0" />
+
 
 # Как это работает?
 1. При запуске файла main.py происходит две вещи:
